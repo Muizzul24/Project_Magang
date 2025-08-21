@@ -12,7 +12,7 @@ class CreateSuratTugasTable extends Migration
             $table->id();
             $table->string('nomor_surat');
             $table->date('tanggal_surat');
-            $table->foreignId('substansi_id')->constrained('substansis')->onDelete('cascade');
+            $table->foreignId('substansi_id')->constrained('substansis');
             $table->text('tujuan')->nullable();
             $table->string('surattugas')->nullable();
             $table->foreignId('substansi_penandatangan_id')->nullable()->constrained('substansis')->onDelete('set null');

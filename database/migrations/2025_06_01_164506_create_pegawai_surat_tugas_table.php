@@ -13,8 +13,8 @@ class CreatePegawaiSuratTugasTable extends Migration
     {
         Schema::create('pegawai_surat_tugas', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('pegawai_id')->constrained()->onDelete('cascade');
-            $table->foreignId('surat_tugas_id')->constrained()->onDelete('cascade');
+            $table->foreignId('pegawai_id')->constrained();
+            $table->foreignId('surat_tugas_id')->constrained();
             $table->timestamps();
 
             // Optional: untuk mencegah duplikat pegawai per surat tugas

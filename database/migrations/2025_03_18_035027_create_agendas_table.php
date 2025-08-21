@@ -8,6 +8,8 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
+     *
+     * @return void
      */
     public function up(): void
     {
@@ -15,20 +17,32 @@ return new class extends Migration
             $table->id();
             $table->string('kegiatan');
             $table->string('asal_surat');
-            $table->date('tanggal');
+            
+            $table->date('tanggal_mulai');
+            $table->date('tanggal_selesai');
+            
             $table->string('tempat');
             $table->text('keterangan_agenda')->nullable();
-            $table->unsignedBigInteger('substansi_id')->nullable()->after('id');
-            $table->foreign('substansi_id')->references('id')->on('substansis')->onDelete('set null');// Foreign key optional:
-            $table->boolean('arsip')->default(false); // Default adalah false (belum diarsipkan) 
-            $table->string('surat')->nullable(); // Ubah tipe data dan tambahkan nullable
-            $table->string('surat_tugas')->nullable();
+            
+            // Foreign key untuk substansi
+            $table->foreignId('substansi_id')->nullable()->constrained('substansis')->onDelete('set null');
+
+            $table->foreignId('surat_tugas_id')
+                  ->nullable()
+                  ->constrained('surat_tugas')
+                  ->onDelete('set null'); // Jika surat tugas dihapus, kolom ini di agenda akan menjadi null
+            
+            $table->boolean('arsip')->default(false); 
+            $table->string('surat')->nullable();
+            $table->string('surat_tugas')->nullable(); // Kolom untuk path file (jika masih dipakai)
             $table->timestamps();
         });
     }
 
     /**
      * Reverse the migrations.
+     *
+     * @return void
      */
     public function down(): void
     {

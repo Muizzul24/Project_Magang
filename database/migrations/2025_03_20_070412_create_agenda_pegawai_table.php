@@ -15,8 +15,8 @@ return new class extends Migration
             $table->timestamps();
 
             // Menambahkan foreign key
-            $table->foreign('agenda_id')->references('id')->on('agendas')->onDelete('cascade');
-            $table->foreign('pegawai_id')->references('id')->on('pegawais')->onDelete('cascade');
+            $table->foreign('agenda_id')->references('id')->on('agendas');
+            $table->foreign('pegawai_id')->references('id')->on('pegawais');
             
             // Menambahkan constraint unique
             $table->unique(['agenda_id', 'pegawai_id']);

@@ -15,11 +15,11 @@ class RoleMiddleware
      * @param  string  ...$roles
      * @return \Symfony\Component\HttpFoundation\Response
      */
+
     public function handle(Request $request, Closure $next, ...$roles): Response
     {
         $user = auth()->user();
 
-        // Cek apakah pengguna ada dan apakah role sesuai
         if (!$user || !in_array($user->role, $roles)) {
             abort(403, 'Akses ditolak');
         }

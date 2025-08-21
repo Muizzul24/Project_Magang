@@ -32,10 +32,20 @@
             <input type="text" name="asal_surat" id="asal_surat" value="{{ old('asal_surat', $agenda->asal_surat) }}" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500" required>
         </div>
 
-        {{-- Tanggal --}}
-        <div class="mb-4">
-            <label for="tanggal" class="block text-sm font-bold text-gray-700 mb-2">Tanggal:</label>
-            <input type="date" name="tanggal" id="tanggal" value="{{ old('tanggal', $agenda->tanggal) }}" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+        {{-- ============================================= --}}
+        {{-- PERUBAHAN: Input Rentang Tanggal (Sama seperti Create) --}}
+        {{-- ============================================= --}}
+        <div class="flex flex-wrap -mx-3 mb-4">
+            <div class="w-full md:w-1/2 px-3 mb-6 md:mb-0">
+                <label for="tanggal_mulai" class="block text-sm font-bold text-gray-700 mb-2">Tanggal Mulai:</label>
+                <input type="text" name="tanggal_mulai" id="tanggal_mulai" value="{{ old('tanggal_mulai', $agenda->tanggal_mulai->format('d-m-Y')) }}" 
+                       class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500" required placeholder="DD-MM-YYYY">
+            </div>
+            <div class="w-full md:w-1/2 px-3">
+                <label for="tanggal_selesai" class="block text-sm font-bold text-gray-700 mb-2">Tanggal Selesai:</label>
+                <input type="text" name="tanggal_selesai" id="tanggal_selesai" value="{{ old('tanggal_selesai', $agenda->tanggal_selesai->format('d-m-Y')) }}" 
+                       class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500" required placeholder="DD-MM-YYYY">
+            </div>
         </div>
 
         {{-- Tempat --}}
@@ -72,28 +82,23 @@
 
         {{-- Upload Surat --}}
         <div class="mb-6">
-            <label class="block text-sm font-bold text-gray-700 mb-2">Upload Surat (opsional):</label>
-
+            <label class="block text-sm font-bold text-gray-700 mb-2">Tambah Surat Baru (opsional):</label>
             <div id="fileInputs">
                 <div class="flex items-center gap-2 mb-2">
                     <input type="file" name="surat[]" class="border border-gray-300 rounded px-3 py-2 w-full" />
                     <button type="button" class="removeFileInput text-red-500 hover:text-red-700 text-sm font-semibold">✕</button>
                 </div>
             </div>
-
             <button type="button" id="addFileBtn" class="text-sm px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded mt-1">+ Tambah File</button>
-
-            <p class="text-xs text-gray-500 mt-1">Format: pdf, doc, docx, xls, xlsx. Maks 2MB per file.</p>
 
             {{-- File yang sudah ada --}}
             @if ($agenda->surat)
                 <div class="mt-4">
                     <h4 class="text-sm font-semibold text-gray-700 mb-2">File Surat yang Sudah Ada:</h4>
                     <div id="existing-files">
-                        @php
-                            $files = explode(',', $agenda->surat);
-                        @endphp
+                        @php $files = explode(',', $agenda->surat); @endphp
                         @foreach ($files as $index => $file)
+                            @if(!empty($file))
                             <div class="flex items-center gap-2 text-sm mt-1 p-2 bg-gray-50 rounded" data-file-index="{{ $index }}">
                                 <a href="{{ asset('storage/' . $file) }}" target="_blank" class="text-blue-600 underline flex-1">
                                     {{ basename($file) }}
@@ -106,6 +111,7 @@
                                     Hapus
                                 </button>
                             </div>
+                            @endif
                         @endforeach
                     </div>
                 </div>
@@ -135,24 +141,69 @@
 @endsection
 
 @push('scripts')
+<!-- JQuery, Select2, Flatpickr -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
 <script>
     $(document).ready(function () {
-        $('#pegawai_ids').select2({ 
-            placeholder: "Pilih Pegawai",
-            allowClear: true
+        // Inisialisasi Select2
+        $('#pegawai_ids, #surat_tugas_id, #substansi_id').select2({
+            placeholder: "Pilih...",
+            allowClear: true,
+            width: '100%'
         });
 
-        // Preload selected pegawai
-        let selectedPegawai = @json($agenda->pegawais->map(function($p) {
-            return ['id' => $p->id, 'text' => $p->nama];
-        }));
-
-        selectedPegawai.forEach(p => {
-            var option = new Option(p.text, p.id, true, true);
-            $('#pegawai_ids').append(option).trigger('change');
+        // Inisialisasi Flatpickr
+        flatpickr("#tanggal_mulai", {
+            dateFormat: "d-m-Y",
+        });
+        flatpickr("#tanggal_selesai", {
+            dateFormat: "d-m-Y",
         });
 
-        // Tambah input file baru
+        // Fungsi load pegawai
+        function loadPegawai(substansiId, selectedPegawaiIds = []) {
+            if (substansiId) {
+                $.ajax({
+                    url: '/agendas/getPegawaiBySubstansi/' + substansiId,
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function (data) {
+                        $('#pegawai_ids').empty();
+                        data.forEach(pegawai => {
+                            let isSelected = selectedPegawaiIds.includes(pegawai.id.toString());
+                            let option = new Option(
+                                pegawai.nama + ' - ' + pegawai.nip + ' - ' + pegawai.jabatan,
+                                pegawai.id, isSelected, isSelected
+                            );
+                            $('#pegawai_ids').append(option);
+                        });
+                        $('#pegawai_ids').trigger('change');
+                    },
+                    error: function () { alert('Gagal mengambil data pegawai.'); }
+                });
+            } else {
+                $('#pegawai_ids').empty().trigger('change');
+            }
+        }
+
+        // Event listener untuk perubahan substansi
+        $('#substansi_id').on('change', function () {
+            loadPegawai($(this).val(), []);
+        });
+
+        // Load data awal saat halaman dibuka
+        var initialSubstansiId = '{{ old('substansi_id', $agenda->substansi_id) }}';
+        var selectedPegawaiIds = @json(old('pegawai_ids', $agenda->pegawais->pluck('id')->map('strval')));
+        if(initialSubstansiId) {
+            loadPegawai(initialSubstansiId, selectedPegawaiIds);
+        }
+
+        // Fungsi tambah/hapus input file
         $('#addFileBtn').click(function () {
             $('#fileInputs').append(`
                 <div class="flex items-center gap-2 mb-2">
@@ -161,98 +212,37 @@
                 </div>
             `);
         });
-
-        // Hapus input file baru
         $('#fileInputs').on('click', '.removeFileInput', function () {
             $(this).closest('.flex').remove();
         });
 
-        // Hapus file yang sudah ada
+        // Fungsi hapus file lama via AJAX
         $(document).on('click', '.delete-file-btn', function () {
-            const agendaId = $(this).data('agenda-id');
-            const fileIndex = $(this).data('file-index');
-            const fileName = $(this).data('file-name');
-            const $fileElement = $(this).closest('[data-file-index]');
-            const $deleteBtn = $(this);
-
+            const button = $(this);
+            const agendaId = button.data('agenda-id');
+            const fileIndex = button.data('file-index');
+            const fileName = button.data('file-name');
+            const fileElement = button.closest('[data-file-index]');
+            
             if (confirm(`Apakah Anda yakin ingin menghapus file "${fileName}"?`)) {
-                // Tampilkan loading
-                $deleteBtn.text('Menghapus...').prop('disabled', true);
-                
                 $.ajax({
                     url: `/agendas/${agendaId}/delete-file/${fileIndex}`,
                     method: 'DELETE',
-                    headers: {
-                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
                     success: function (response) {
-                        console.log('Success response:', response);
-                        
                         if (response.success) {
-                            // Hapus elemen dari DOM
-                            $fileElement.fadeOut(300, function() {
-                                $(this).remove();
-                                
-                                // Re-index semua file yang tersisa
-                                $('#existing-files [data-file-index]').each(function(newIndex) {
-                                    $(this).attr('data-file-index', newIndex);
-                                    $(this).find('.delete-file-btn').attr('data-file-index', newIndex);
-                                });
-                                
-                                // Cek apakah masih ada file
-                                if ($('#existing-files [data-file-index]').length === 0) {
-                                    $('#existing-files').parent().hide();
-                                }
-                            });
-                            
-                            // Tampilkan notifikasi sukses
-                            showNotification('File berhasil dihapus!', 'success');
+                            fileElement.fadeOut(300, function () { $(this).remove(); });
+                            alert('File berhasil dihapus.');
                         } else {
-                            $deleteBtn.text('Hapus').prop('disabled', false);
-                            showNotification('Gagal menghapus file: ' + (response.error || 'Unknown error'), 'error');
+                            alert('Gagal menghapus file: ' + response.error);
                         }
                     },
-                    error: function (xhr, status, error) {
-                        console.error('AJAX Error:', xhr.responseText);
-                        $deleteBtn.text('Hapus').prop('disabled', false);
-                        
-                        let errorMsg = 'Gagal menghapus file. Coba lagi.';
-                        
-                        if (xhr.responseJSON && xhr.responseJSON.error) {
-                            errorMsg = xhr.responseJSON.error;
-                        } else if (xhr.status === 403) {
-                            errorMsg = 'Tidak diizinkan menghapus file ini.';
-                        } else if (xhr.status === 404) {
-                            errorMsg = 'File tidak ditemukan.';
-                        } else if (xhr.status === 500) {
-                            errorMsg = 'Terjadi kesalahan server.';
-                        }
-                        
-                        showNotification(errorMsg, 'error');
+                    error: function (xhr) {
+                        alert('Terjadi kesalahan: ' + (xhr.responseJSON.error || 'Silakan coba lagi.'));
                     }
                 });
             }
         });
-        
-        // Fungsi untuk menampilkan notifikasi
-        function showNotification(message, type) {
-            const bgColor = type === 'success' ? 'bg-green-500' : 'bg-red-500';
-            const notification = $(`
-                <div class="fixed top-4 right-4 ${bgColor} text-white px-6 py-3 rounded shadow-lg z-50 notification">
-                    ${message}
-                </div>
-            `);
-            
-            $('body').append(notification);
-            
-            setTimeout(() => {
-                notification.fadeOut(300, function() {
-                    $(this).remove();
-                });
-            }, 3000);
-        }
     });
 </script>
 @endpush

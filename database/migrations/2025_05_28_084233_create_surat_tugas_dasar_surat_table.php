@@ -12,12 +12,10 @@ class CreateSuratTugasDasarSuratTable extends Migration
             $table->id();
 
             $table->foreignId('surat_tugas_id')
-                ->constrained()
-                ->onDelete('cascade');
+                ->constrained();
 
             $table->foreignId('dasar_surat_id')
-                ->constrained('dasar_untuk_surat') // Secara eksplisit refer ke tabel dasar_surat
-                ->onDelete('cascade');
+                ->constrained('dasar_untuk_surat');
 
             $table->timestamps();
         });

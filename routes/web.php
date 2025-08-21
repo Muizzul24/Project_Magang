@@ -48,7 +48,6 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
 */
 Route::middleware(['auth', 'role:admin,operator'])->group(function () {
     // Agenda khusus (arsip dan arsip otomatis)
-    Route::get('/agendas/arsip', [AgendaController::class, 'arsip'])->name('agendas.arsip');
     Route::post('/agendas/arsip', [AgendaController::class, 'arsipAgendaTerlewat'])->name('agendas.arsipAgendaTerlewat');
     
     // Tambahkan route ini di file routes/web.php
@@ -69,7 +68,6 @@ Route::middleware(['auth', 'role:admin,operator'])->group(function () {
     Route::resource('parafSurat', ParafSuratController::class);
 
     // Resource untuk agenda, pegawai, substansi
-    Route::resource('agendas', AgendaController::class)->whereNumber('agenda');
     Route::resource('pegawais', PegawaiController::class);
 });
 
@@ -79,8 +77,8 @@ Route::middleware(['auth', 'role:admin,operator'])->group(function () {
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth', 'role:admin,operator,anggota'])->group(function () {
-    Route::get('/agendas', [AgendaController::class, 'index'])->name('agendas.index');
-    Route::get('/agendas/{agenda}', [AgendaController::class, 'show'])->name('agendas.show');
+    Route::resource('agendas', AgendaController::class)->whereNumber('agenda');
+    Route::get('/agendas/arsip', [AgendaController::class, 'arsip'])->name('agendas.arsip');
     Route::get('/agendas/{agenda}/surat-tugas', [AgendaController::class, 'SuratTugas'])->name('agendas.surat_tugas');
     Route::get('/kalender', [KalenderController::class, 'index'])->name('kalender.index');
 });

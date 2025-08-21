@@ -22,46 +22,51 @@
             <p class="text-sm text-gray-500">Agenda yang sudah berlalu</p>
         </a>
 
-        <a href="{{ route('pegawais.index') }}" class="p-4 bg-white shadow-md rounded-lg hover:bg-blue-50 border border-gray-200">
-            <h2 class="text-lg font-semibold text-blue-600">👥 Data Pegawai</h2>
-            <p class="text-sm text-gray-500">Kelola daftar pegawai</p>
-        </a>
+        @if(auth()->user()->role === 'admin' || auth()->user()->role === 'operator')
+            <a href="{{ route('pegawais.index') }}" class="p-4 bg-white shadow-md rounded-lg hover:bg-blue-50 border border-gray-200">
+                <h2 class="text-lg font-semibold text-blue-600">👥 Data Pegawai</h2>
+                <p class="text-sm text-gray-500">Kelola daftar pegawai</p>
+            </a>
 
-        <a href="{{ route('dasarSurat.index') }}" class="p-4 bg-white shadow-md rounded-lg hover:bg-blue-50 border border-gray-200">
-            <h2 class="text-lg font-semibold text-blue-600">📄 Dasar Surat</h2>
-            <p class="text-sm text-gray-500">Kelola referensi dasar surat</p>
-        </a>
+            <a href="{{ route('dasarSurat.index') }}" class="p-4 bg-white shadow-md rounded-lg hover:bg-blue-50 border border-gray-200">
+                <h2 class="text-lg font-semibold text-blue-600">📄 Dasar Surat</h2>
+                <p class="text-sm text-gray-500">Kelola referensi dasar surat</p>
+            </a>
 
-        <a href="{{ route('parafSurat.index') }}" class="p-4 bg-white shadow-md rounded-lg hover:bg-blue-50 border border-gray-200">
-            <h2 class="text-lg font-semibold text-blue-600">✍️ Paraf Surat</h2>
-            <p class="text-sm text-gray-500">Kelola data paraf</p>
-        </a>
+            <a href="{{ route('parafSurat.index') }}" class="p-4 bg-white shadow-md rounded-lg hover:bg-blue-50 border border-gray-200">
+                <h2 class="text-lg font-semibold text-blue-600">✍️ Paraf Surat</h2>
+                <p class="text-sm text-gray-500">Kelola data paraf</p>
+            </a>
 
-        <a href="{{ route('surat_tugas.index') }}" class="p-4 bg-white shadow-md rounded-lg hover:bg-blue-50 border border-gray-200">
-            <h2 class="text-lg font-semibold text-blue-600">📬 Surat Tugas</h2>
-            <p class="text-sm text-gray-500">Manajemen surat tugas</p>
-        </a>
+            <a href="{{ route('surat_tugas.index') }}" class="p-4 bg-white shadow-md rounded-lg hover:bg-blue-50 border border-gray-200">
+                <h2 class="text-lg font-semibold text-blue-600">📬 Surat Tugas</h2>
+                <p class="text-sm text-gray-500">Manajemen surat tugas</p>
+            </a>
+        @endif
 
-        <a href="{{ route('users.index') }}" class="p-4 bg-white shadow-md rounded-lg hover:bg-blue-50 border border-gray-200">
-            <h2 class="text-lg font-semibold text-blue-600">👤 Daftar User</h2>
-            <p class="text-sm text-gray-500">Kelola akun pengguna</p>
-        </a>
+        @if(auth()->user()->role === 'admin')
+            <a href="{{ route('users.index') }}" class="p-4 bg-white shadow-md rounded-lg hover:bg-blue-50 border border-gray-200">
+                <h2 class="text-lg font-semibold text-blue-600">👤 Daftar User</h2>
+                <p class="text-sm text-gray-500">Kelola akun pengguna</p>
+            </a>
 
-        <a href="{{ route('substansis.index') }}" class="p-4 bg-white shadow-md rounded-lg hover:bg-blue-50 border border-gray-200">
-            <h2 class="text-lg font-semibold text-blue-600">📌 Daftar Substansi</h2>
-            <p class="text-sm text-gray-500">Manajemen unit substansi</p>
-        </a>
+            <a href="{{ route('substansis.index') }}" class="p-4 bg-white shadow-md rounded-lg hover:bg-blue-50 border border-gray-200">
+                <h2 class="text-lg font-semibold text-blue-600">📌 Daftar Substansi</h2>
+                <p class="text-sm text-gray-500">Manajemen unit substansi</p>
+            </a>
+        @endif
 
         <a href="{{ route('kalender.index') }}" class="p-4 bg-white shadow-md rounded-lg hover:bg-blue-50 border border-gray-200">
             <h2 class="text-lg font-semibold text-blue-600">🗓️ Kalender</h2>
             <p class="text-sm text-gray-500">Lihat jadwal kegiatan</p>
         </a>
-
-        <form method="POST" action="{{ route('logout') }}" class="p-4 bg-white shadow-md rounded-lg border border-gray-200 hover:bg-red-50">
+        
+        <form method="POST" action="{{ route('logout') }}">
             @csrf
-            <button type="submit" class="text-left w-full">
-                <h2 class="text-lg font-semibold text-red-600">🚪 Logout</h2>
-                <p class="text-sm text-gray-500">Keluar dari sistem</p>
+
+            <button type="submit" class="w-full text-left p-4 bg-white shadow-md rounded-lg hover:bg-blue-50 border border-gray-200">
+                <h2 class="text-lg font-semibold text-blue-600">🚪 Logout</h2>
+                <p class="text-sm text-gray-500">Keluar dari website</p>
             </button>
         </form>
     </div>

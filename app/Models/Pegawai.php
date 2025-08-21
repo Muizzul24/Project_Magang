@@ -31,4 +31,10 @@ class Pegawai extends Model
     {
         return $this->belongsTo(Substansi::class);
     }
+
+    public function suratTugasDitandatangani()
+    {
+        // Asumsi nama foreign key di tabel surat_tugas adalah 'penandatangan_id'
+        return $this->hasMany(SuratTugas::class, 'penandatangan_id');
+    }
 }

@@ -47,11 +47,11 @@ class PegawaiController extends Controller
             case 'jabatan':
                 $query->orderBy('pegawais.jabatan');
                 break;
-            case 'terbaru':
-                $query->orderBy('pegawais.created_at', 'desc');
-                break;
             case 'substansi':
                 $query->orderBy('substansis.id');
+                break;
+            case 'terbaru':
+                $query->orderBy('pegawais.created_at', 'desc');
                 break;
             case 'terlama':
                 $query->orderBy('created_at', 'asc');
@@ -153,20 +153,30 @@ class PegawaiController extends Controller
 
     public function destroy(Pegawai $pegawai)
     {
-        // Cegah penghapusan jika operator bukan dari substansi yang sesuai
+        // 1. Cek otorisasi (kode Anda yang sudah ada)
         if (auth()->user()->role === 'operator' && auth()->user()->substansi_id !== $pegawai->substansi_id) {
             return redirect()->route('pegawais.index')->with('error', 'Tidak diizinkan.');
         }
 
+        // =============================================
+        // PERBAIKAN: Tambahkan logika pengecekan relasi
+        // =============================================
+
+        // 2. Cek apakah pegawai terdaftar sebagai penandatangan surat tugas
+        if ($pegawai->suratTugasDitandatangani()->exists()) {
+            return redirect()->route('pegawais.index')
+                ->with('error', 'Gagal! Pegawai "' . $pegawai->nama . '" tidak bisa dihapus karena masih terdaftar sebagai penandatangan surat tugas.');
+        }
+
+        // 3. Cek apakah pegawai terdaftar di agenda
+        if ($pegawai->agendas()->exists()) {
+            return redirect()->route('pegawais.index')
+                ->with('error', 'Gagal! Pegawai "' . $pegawai->nama . '" tidak bisa dihapus karena masih terdaftar dalam agenda.');
+        }
+
+        // 4. Jika semua pengecekan lolos, baru hapus pegawai
         $pegawai->delete();
 
-        return redirect('/pegawais')->with('success', 'Pegawai berhasil dihapus.');
-    }
-
-    public function getBySubstansi($substansiId)
-    {
-        $pegawais = Pegawai::where('substansi_id', $substansiId)->get();
-
-        return response()->json($pegawais);
+        return redirect()->route('pegawais.index')->with('success', 'Pegawai berhasil dihapus.');
     }
 }

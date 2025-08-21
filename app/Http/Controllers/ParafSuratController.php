@@ -79,11 +79,20 @@ class ParafSuratController extends Controller
     }
 
     // Menghapus data
+// app/Http/Controllers/ParafSuratController.php
+
     public function destroy(ParafSurat $parafSurat)
     {
+        // 1. Cek apakah paraf surat ini masih digunakan di surat tugas
+        if ($parafSurat->suratTugas()->exists()) {
+            return redirect()->route('parafSurat.index')
+                ->with('error', 'Gagal! Paraf surat tidak bisa dihapus karena masih digunakan oleh surat tugas lain.');
+        }
+
+        // 2. Jika tidak ada relasi, baru hapus data
         $parafSurat->delete();
 
         return redirect()->route('parafSurat.index')
-                         ->with('success', 'Data berhasil dihapus.');
+                        ->with('success', 'Data berhasil dihapus.');
     }
 }

@@ -49,10 +49,17 @@
         </div>
     </form>
 
-    <!-- Notifikasi -->
+    {{-- ============================================= --}}
+    {{-- PERUBAHAN: Menambahkan kelas 'auto-dismiss' --}}
+    {{-- ============================================= --}}
     @if (session('success'))
-        <div class="bg-green-200 text-green-800 p-3 rounded mb-4">
+        <div class="auto-dismiss bg-green-200 text-green-800 p-3 rounded mb-4">
             {{ session('success') }}
+        </div>
+    @endif
+    @if (session('error'))
+        <div class="auto-dismiss bg-red-200 text-red-800 p-3 rounded mb-4">
+            {{ session('error') }}
         </div>
     @endif
 
@@ -76,13 +83,11 @@
                                 <div class="flex justify-center space-x-2">
                                     <a href="{{ route('dasarSurat.edit', $dasarSurat->id) }}"
                                        class="bg-yellow-500 hover:bg-yellow-700 text-white py-1 px-3 rounded text-sm font-bold">Edit</a>
-                                    <form action="{{ route('dasarSurat.destroy', $dasarSurat->id) }}" method="POST"
-                                          onsubmit="return confirm('Yakin ingin menghapus data ini?');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit"
-                                                class="bg-red-500 hover:bg-red-700 text-white py-1 px-3 rounded text-sm font-bold">Hapus</button>
-                                    </form>
+                                    <button type="button"
+                                            data-action="{{ route('dasarSurat.destroy', $dasarSurat->id) }}"
+                                            class="open-delete bg-red-500 hover:bg-red-700 text-white py-1 px-3 rounded text-sm font-bold">
+                                        Hapus
+                                    </button>
                                 </div>
                             </td>
                         </tr>
@@ -99,4 +104,62 @@
         <p class="text-gray-600 mt-4">Data dasar surat belum tersedia.</p>
     @endif
 </div>
+
+{{-- Modal Konfirmasi Delete --}}
+<div id="confirm-delete" class="hidden fixed z-50 top-20 left-1/2 transform -translate-x-1/2 bg-white border border-gray-300 shadow-lg rounded-lg p-6 w-full max-w-md">
+    <h2 class="text-lg font-semibold text-gray-800 mb-2">Konfirmasi Hapus</h2>
+    <p class="text-sm text-gray-600 mb-4">Apakah Anda yakin ingin menghapus data dasar surat ini?</p>
+    <form method="POST" id="delete-form">
+        @csrf
+        @method('DELETE')
+        <div class="flex justify-end gap-2">
+            <button type="button" class="cancel-delete px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">Batal</button>
+            <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">Hapus</button>
+        </div>
+    </form>
+</div>
 @endsection
+
+@push('scripts')
+{{-- ============================================= --}}
+{{-- PENAMBAHAN: Script untuk Modal & Notifikasi  --}}
+{{-- ============================================= --}}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // --- Logika untuk Modal Hapus ---
+        const modal = document.getElementById('confirm-delete');
+        if (modal) {
+            const form = document.getElementById('delete-form');
+            const openButtons = document.querySelectorAll('.open-delete');
+            const cancelButtons = modal.querySelectorAll('.cancel-delete');
+
+            openButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    form.setAttribute('action', button.getAttribute('data-action'));
+                    modal.classList.remove('hidden');
+                });
+            });
+
+            cancelButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    modal.classList.add('hidden');
+                });
+            });
+        }
+
+        // --- Logika untuk Notifikasi Auto-Dismiss ---
+        const alerts = document.querySelectorAll('.auto-dismiss');
+        alerts.forEach(function(alert) {
+            setTimeout(function() {
+                alert.style.transition = 'opacity 0.5s ease';
+                alert.style.opacity = '0';
+                
+                setTimeout(function() {
+                    alert.remove();
+                }, 500);
+
+            }, 5000); // 5 detik
+        });
+    });
+</script>
+@endpush

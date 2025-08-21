@@ -50,8 +50,9 @@ class SuratTugas extends Model
         return $this->belongsTo(Pegawai::class, 'penandatangan_id');
     }
 
-    public function agenda()
+    public function agendas()
     {
-        return $this->belongsTo(Agenda::class);
+        // Asumsi nama foreign key di tabel agendas adalah 'surat_tugas_id'
+        return $this->hasMany(Agenda::class, 'surat_tugas_id');
     }
 }

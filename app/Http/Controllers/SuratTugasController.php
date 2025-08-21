@@ -21,18 +21,25 @@ class SuratTugasController extends Controller
         $searchTujuan = $request->input('search_tujuan');
         $searchSubstansi = $request->input('search_substansi');
         $searchPegawai = $request->input('search_pegawai');
-        $sortBy = $request->input('sort_by', 'tanggal_terdekat'); // default: tanggal terdekat
+        $sortBy = $request->input('sort_by', 'tanggal_terdekat');
 
         $query = SuratTugas::with(['pegawais', 'dasarSurat', 'parafSurat', 'penandatangan', 'substansi']);
 
-        // ⬅️ Batasi data hanya untuk substansi milik operator
         if (auth()->user()->role === 'operator') {
             $query->where('substansi_id', auth()->user()->substansi_id);
         }
 
         // Pencarian
         if ($searchTanggal) {
-            $query->whereDate('tanggal_surat', $searchTanggal);
+            try {
+                // =============================================
+                // PERBAIKAN: Konversi format tanggal sebelum query
+                // =============================================
+                $tanggalFormatted = Carbon::createFromFormat('d-m-Y', $searchTanggal)->format('Y-m-d');
+                $query->whereDate('tanggal_surat', $tanggalFormatted);
+            } catch (\Exception $e) {
+                // Abaikan jika format tanggal salah, tidak perlu menghentikan proses
+            }
         }
 
         if ($searchTujuan) {
@@ -68,7 +75,7 @@ class SuratTugasController extends Controller
                 $query->orderBy('surat_tugas.created_at', 'desc');
                 break;
             default:
-                $query->orderBy('tanggal_surat', 'asc'); // fallback to tanggal terdekat
+                $query->orderBy('tanggal_surat', 'asc');
                 break;
         }
 
@@ -86,10 +93,11 @@ class SuratTugasController extends Controller
             $substansis = Substansi::all();
         }
 
+        $substansiPenandatangan = Substansi::all();
         $dasarSurats = DasarSurat::all();
         $parafSurats = ParafSurat::all();
 
-        return view('surat_tugas.create', compact('substansis', 'dasarSurats', 'parafSurats'));
+        return view('surat_tugas.create', compact('substansis', 'substansiPenandatangan', 'dasarSurats', 'parafSurats'));
     }
 
     public function getPegawaiBySubstansi($substansi_id)
@@ -308,15 +316,35 @@ class SuratTugasController extends Controller
     public function destroy($id)
     {
         $suratTugas = SuratTugas::findOrFail($id);
+
+        // =============================================
+        // PERBAIKAN: Cek relasi ke Agenda sebelum hapus
+        // =============================================
+        if ($suratTugas->agendas()->exists()) {
+            return redirect()->route('surat_tugas.index')
+                ->with('error', 'Gagal! Surat tugas ini tidak bisa dihapus karena masih digunakan oleh sebuah agenda.');
+        }
+
         try {
-            if ($suratTugas->surattugas) {
-                $path = storage_path('app/public/' . $suratTugas->surattugas);
-                if (file_exists($path)) unlink($path);
-            }
-            $suratTugas->delete();
+            DB::transaction(function () use ($suratTugas) {
+                $suratTugas->pegawais()->detach();
+                $suratTugas->dasarSurat()->detach();
+                $suratTugas->parafSurat()->detach();
+
+                if ($suratTugas->surattugas) {
+                    $path = storage_path('app/public/' . $suratTugas->surattugas);
+                    if (file_exists($path)) {
+                        unlink($path);
+                    }
+                }
+                
+                $suratTugas->delete();
+            });
+
             return redirect()->route('surat_tugas.index')->with('success', 'Surat Tugas berhasil dihapus.');
+
         } catch (\Exception $e) {
-            return back()->withErrors(['error' => 'Gagal menghapus data: ' . $e->getMessage()]);
+            return back()->with('error', 'Gagal menghapus data: ' . $e->getMessage());
         }
     }
 

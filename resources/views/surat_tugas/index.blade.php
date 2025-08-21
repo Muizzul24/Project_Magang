@@ -26,7 +26,7 @@
 
     <div class="flex flex-wrap gap-2 items-center">
         <input type="text" name="search_tujuan" placeholder="Cari Tujuan" value="{{ request('search_tujuan') }}" class="border border-gray-300 rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500">
-        <input type="date" name="search_tanggal" value="{{ request('search_tanggal') }}" class="border border-gray-300 rounded px-3 py-1">
+        <input type="text" id="search_tanggal" name="search_tanggal" value="{{ request('search_tanggal') }}" class="border border-gray-300 rounded px-3 py-1" placeholder="Cari Tanggal">
         <input type="text" name="search_substansi" placeholder="Cari Substansi" value="{{ request('search_substansi') }}" class="border border-gray-300 rounded px-3 py-1">
         <input type="text" name="search_pegawai" placeholder="Cari Pegawai" value="{{ request('search_pegawai') }}" class="border border-gray-300 rounded px-3 py-1">
 
@@ -42,6 +42,20 @@
         </select>
     </div>
 </form>
+
+{{-- ============================================= --}}
+{{-- PERUBAHAN: Menambahkan kelas 'auto-dismiss' --}}
+{{-- ============================================= --}}
+@if (session('success'))
+    <div class="auto-dismiss bg-green-200 text-green-800 p-3 rounded mb-4">
+        {{ session('success') }}
+    </div>
+@endif
+@if (session('error'))
+    <div class="auto-dismiss bg-red-200 text-red-800 p-3 rounded mb-4">
+        {{ session('error') }}
+    </div>
+@endif
 
 {{-- Tabel --}}
 <div class="overflow-x-auto">
@@ -103,11 +117,11 @@
                             <a href="{{ route('surat_tugas.show', $surat->id) }}" class="w-20 bg-blue-500 hover:bg-blue-700 text-white py-1 px-2 rounded text-sm text-center">Detail</a>
                             @if(auth()->user()->role !== 'anggota')
                                 <a href="{{ route('surat_tugas.edit', $surat->id) }}" class="w-20 bg-yellow-500 hover:bg-yellow-700 text-white py-1 px-2 rounded text-sm text-center">Edit</a>
-                                <form action="{{ route('surat_tugas.destroy', $surat->id) }}" method="POST" onsubmit="return confirm('Yakin ingin menghapus?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="w-20 bg-red-500 hover:bg-red-700 text-white py-1 px-2 rounded text-sm text-center">Hapus</button>
-                                </form>
+                                <button type="button"
+                                        class="w-20 bg-red-500 hover:bg-red-700 text-white py-1 px-2 rounded text-sm text-center open-delete"
+                                        data-action="{{ route('surat_tugas.destroy', $surat->id) }}">
+                                    Hapus
+                                </button>
                             @endif
                         </div>
                     </td>
@@ -125,4 +139,68 @@
 <div class="mt-4">
     {{ $suratTugas->appends(request()->except('page'))->links() }}
 </div>
+
+<!-- Modal Konfirmasi Hapus -->
+<div id="confirm-delete" class="hidden fixed z-50 top-24 left-1/2 transform -translate-x-1/2 bg-white border border-gray-300 shadow-lg rounded-lg p-6 w-full max-w-md">
+    <h2 class="text-lg font-semibold text-gray-800 mb-2">Konfirmasi Hapus</h2>
+    <p class="text-sm text-gray-600 mb-4">Apakah Anda yakin ingin menghapus surat tugas ini?</p>
+    <form method="POST" id="delete-form">
+        @csrf
+        @method('DELETE')
+        <div class="flex justify-end gap-2">
+            <button type="button" class="cancel-delete px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">Batal</button>
+            <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">Hapus</button>
+        </div>
+    </form>
+</div>
 @endsection
+
+@push('scripts')
+<!-- Flatpickr -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // --- Inisialisasi Flatpickr ---
+        flatpickr("#search_tanggal", {
+            dateFormat: "d-m-Y",
+        });
+
+        // --- Logika untuk Modal Hapus ---
+        const modal = document.getElementById('confirm-delete');
+        if (modal) {
+            const form = document.getElementById('delete-form');
+            const openButtons = document.querySelectorAll('.open-delete');
+            const cancelButtons = modal.querySelectorAll('.cancel-delete');
+
+            openButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    form.setAttribute('action', button.getAttribute('data-action'));
+                    modal.classList.remove('hidden');
+                });
+            });
+
+            cancelButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    modal.classList.add('hidden');
+                });
+            });
+        }
+
+        // --- Logika untuk Notifikasi Auto-Dismiss ---
+        const alerts = document.querySelectorAll('.auto-dismiss');
+        alerts.forEach(function(alert) {
+            setTimeout(function() {
+                alert.style.transition = 'opacity 0.5s ease';
+                alert.style.opacity = '0';
+                
+                setTimeout(function() {
+                    alert.remove();
+                }, 500);
+
+            }, 5000); // 5 detik
+        });
+    });
+</script>
+@endpush

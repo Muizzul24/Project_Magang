@@ -13,16 +13,26 @@ class DashboardController extends Controller
         // Ambil parameter 'periode', default 7 hari
         $days = (int) $request->input('periode', 7);
 
-        $startDate = Carbon::today(); // mulai hari ini
-        $endDate = Carbon::today()->addDays($days); // sampai hari ke-N
+        $startDate = Carbon::today(); // Mulai hari ini
+        $endDate = Carbon::today()->addDays($days); // Sampai hari ke-N
 
-        // Ambil agenda berdasarkan tanggal dan batasi substansi untuk operator/anggota
+        // =============================================
+        // PERUBAHAN: Logika Query untuk Rentang Tanggal
+        // =============================================
         $recentAgendas = Agenda::with(['substansi', 'pegawais'])
-            ->whereBetween('tanggal', [$startDate, $endDate])
+            // Cari agenda yang rentang waktunya bersinggungan dengan periode dashboard.
+            // Kondisi: Tanggal mulai agenda harus sebelum atau sama dengan tanggal akhir periode,
+            // DAN tanggal selesai agenda harus setelah atau sama dengan tanggal mulai periode.
+            ->where(function ($query) use ($startDate, $endDate) {
+                $query->where('tanggal_mulai', '<=', $endDate)
+                      ->where('tanggal_selesai', '>=', $startDate);
+            })
+            ->where('arsip', false) // Tambahan: Pastikan hanya agenda yang belum diarsip
             ->when(in_array(auth()->user()->role, ['operator', 'anggota']), function ($query) {
                 $query->where('substansi_id', auth()->user()->substansi_id);
             })
-            ->orderBy('tanggal', 'asc')
+            // Urutkan berdasarkan tanggal mulai agenda
+            ->orderBy('tanggal_mulai', 'asc')
             ->get();
 
         return view('dashboard', compact('recentAgendas', 'days'));

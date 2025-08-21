@@ -11,16 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('agenda_files', function (Blueprint $table) {
+        Schema::create('pegawais', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('agenda_id');
-            $table->string('nama_file');
-            $table->string('path');
+            $table->string('nama');
+            $table->string('nip');
+            $table->string('pangkat_golongan');
+            $table->string('jabatan');
+            $table->foreignId('substansi_id')->constrained('substansis');
             $table->timestamps();
-
-            $table->foreign('agenda_id')->references('id')->on('agendas')->onDelete('cascade');
         });
-
     }
 
     /**
@@ -28,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('agenda_files');
+        Schema::dropIfExists('pegawais');
     }
 };
