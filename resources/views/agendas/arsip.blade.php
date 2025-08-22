@@ -10,7 +10,7 @@
         {{-- PERUBAHAN: Tombol dibatasi untuk admin & operator --}}
         {{-- ============================================= --}}
         @if(in_array(auth()->user()->role, ['admin', 'operator']))
-            <form action="{{ route('agendas.arsip.store') }}" method="POST" onsubmit="return confirm('Pindahkan semua agenda yang tanggalnya sudah lewat ke arsip?')">
+            <form action="{{ route('agendas.arsip') }}" method="POST" onsubmit="return confirm('Pindahkan semua agenda yang tanggalnya sudah lewat ke arsip?')">
                 @csrf
                 <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-sm inline-block">
                     <i class="fas fa-archive mr-2"></i>Arsipkan Agenda Terlewat
