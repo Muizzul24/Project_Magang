@@ -16,7 +16,7 @@
         </div>
     @endif
 
-    <form action="{{ route('agendas.update', $agenda->id) }}" method="POST" enctype="multipart/form-data" class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+    <form action="{{ route('agendas.update', ['agenda' => $agenda->id, 'from' => request('from')]) }}" method="POST" enctype="multipart/form-data" class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
         @csrf
         @method('PUT')
 
@@ -31,10 +31,8 @@
             <label for="asal_surat" class="block text-sm font-bold text-gray-700 mb-2">Asal Surat:</label>
             <input type="text" name="asal_surat" id="asal_surat" value="{{ old('asal_surat', $agenda->asal_surat) }}" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500" required>
         </div>
-
-        {{-- ============================================= --}}
-        {{-- PERUBAHAN: Input Rentang Tanggal (Sama seperti Create) --}}
-        {{-- ============================================= --}}
+        
+        {{-- Tanggal --}}
         <div class="flex flex-wrap -mx-3 mb-4">
             <div class="w-full md:w-1/2 px-3 mb-6 md:mb-0">
                 <label for="tanggal_mulai" class="block text-sm font-bold text-gray-700 mb-2">Tanggal Mulai:</label>
@@ -97,16 +95,16 @@
                     <h4 class="text-sm font-semibold text-gray-700 mb-2">File Surat yang Sudah Ada:</h4>
                     <div id="existing-files">
                         @php $files = explode(',', $agenda->surat); @endphp
-                        @foreach ($files as $index => $file)
+                        @foreach ($files as $file)
                             @if(!empty($file))
-                            <div class="flex items-center gap-2 text-sm mt-1 p-2 bg-gray-50 rounded" data-file-index="{{ $index }}">
+                            <div class="flex items-center gap-2 text-sm mt-1 p-2 bg-gray-50 rounded" data-file-path="{{ $file }}">
                                 <a href="{{ asset('storage/' . $file) }}" target="_blank" class="text-blue-600 underline flex-1">
                                     {{ basename($file) }}
                                 </a>
                                 <button type="button" 
-                                        class="delete-file-btn text-red-600 hover:text-red-800 text-xs font-semibold px-2 py-1 bg-red-100 hover:bg-red-200 rounded"
+                                        class="open-delete-file-modal text-red-600 hover:text-red-800 text-xs font-semibold px-2 py-1 bg-red-100 hover:bg-red-200 rounded"
                                         data-agenda-id="{{ $agenda->id }}"
-                                        data-file-index="{{ $index }}"
+                                        data-file-path="{{ $file }}"
                                         data-file-name="{{ basename($file) }}">
                                     Hapus
                                 </button>
@@ -134,9 +132,21 @@
         {{-- Tombol --}}
         <div class="flex justify-end space-x-3">
             <button type="submit" class="px-6 py-2 bg-blue-600 text-white font-semibold rounded hover:bg-blue-700 transition duration-200">Update</button>
-            <a href="{{ route('agendas.index') }}" class="px-6 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition duration-200">Batal</a>
+            
+            @php
+                $backUrl = request('from') === 'arsip' ? route('agendas.arsip') : route('agendas.index');
+            @endphp
+            <a href="{{ $backUrl }}" class="px-6 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition duration-200">Batal</a>
         </div>
     </form>
+</div>
+<div id="confirm-delete-file" class="hidden fixed z-50 top-20 left-1/2 transform -translate-x-1/2 bg-white border border-gray-300 shadow-lg rounded-lg p-6 w-full max-w-md">
+    <h2 class="text-lg font-semibold text-gray-800 mb-2">Konfirmasi Hapus File</h2>
+    <p class="text-sm text-gray-600 mb-4">Apakah Anda yakin ingin menghapus file: <strong id="file-to-delete-name"></strong>?</p>
+    <div class="flex justify-end gap-2">
+        <button type="button" class="cancel-delete-file px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">Batal</button>
+        <button type="button" id="confirm-delete-file-btn" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">Ya, Hapus</button>
+    </div>
 </div>
 @endsection
 
@@ -203,7 +213,7 @@
             loadPegawai(initialSubstansiId, selectedPegawaiIds);
         }
 
-        // Fungsi tambah/hapus input file
+        // Fungsi tambah/hapus input file baru
         $('#addFileBtn').click(function () {
             $('#fileInputs').append(`
                 <div class="flex items-center gap-2 mb-2">
@@ -216,32 +226,55 @@
             $(this).closest('.flex').remove();
         });
 
-        // Fungsi hapus file lama via AJAX
-        $(document).on('click', '.delete-file-btn', function () {
+        const fileDeleteModal = $('#confirm-delete-file');
+        const confirmFileDeleteBtn = $('#confirm-delete-file-btn');
+        const fileNameSpan = $('#file-to-delete-name');
+        let fileDeleteData = {};
+
+        // Buka modal saat tombol hapus file diklik
+        $('#existing-files').on('click', '.open-delete-file-modal', function () {
             const button = $(this);
-            const agendaId = button.data('agenda-id');
-            const fileIndex = button.data('file-index');
-            const fileName = button.data('file-name');
-            const fileElement = button.closest('[data-file-index]');
-            
-            if (confirm(`Apakah Anda yakin ingin menghapus file "${fileName}"?`)) {
-                $.ajax({
-                    url: `/agendas/${agendaId}/delete-file/${fileIndex}`,
-                    method: 'DELETE',
-                    headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
-                    success: function (response) {
-                        if (response.success) {
-                            fileElement.fadeOut(300, function () { $(this).remove(); });
-                            alert('File berhasil dihapus.');
-                        } else {
-                            alert('Gagal menghapus file: ' + response.error);
-                        }
-                    },
-                    error: function (xhr) {
-                        alert('Terjadi kesalahan: ' + (xhr.responseJSON.error || 'Silakan coba lagi.'));
+            fileDeleteData = {
+                agendaId: button.data('agenda-id'),
+                filePath: button.data('file-path'),
+                fileName: button.data('file-name'),
+                element: button.closest('[data-file-path]')
+            };
+            fileNameSpan.text(fileDeleteData.fileName);
+            fileDeleteModal.removeClass('hidden');
+        });
+
+        // Tutup modal saat tombol batal diklik
+        fileDeleteModal.on('click', '.cancel-delete-file', function () {
+            fileDeleteModal.addClass('hidden');
+        });
+
+        // Jalankan AJAX saat tombol konfirmasi di modal diklik
+        confirmFileDeleteBtn.on('click', function () {
+            $(this).text('Menghapus...').prop('disabled', true);
+
+            $.ajax({
+                url: `{{ route('agendas.deleteSurat', $agenda) }}`, // Route tanpa parameter
+                method: 'DELETE',
+                headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                data: {
+                    filename: fileDeleteData.filePath // Kirim nama file di body
+                },
+                success: function (response) {
+                    if (response.success) {
+                        fileDeleteData.element.fadeOut(300, function () { $(this).remove(); });
+                    } else {
+                        alert('Gagal menghapus file: ' + (response.error || 'Terjadi kesalahan'));
                     }
-                });
-            }
+                },
+                error: function (xhr) {
+                    alert('Terjadi kesalahan server: ' + (xhr.responseJSON.error || 'Silakan coba lagi.'));
+                },
+                complete: function() {
+                    fileDeleteModal.addClass('hidden');
+                    confirmFileDeleteBtn.text('Ya, Hapus').prop('disabled', false);
+                }
+            });
         });
     });
 </script>

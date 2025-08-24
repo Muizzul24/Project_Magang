@@ -49,9 +49,6 @@
         </div>
     </form>
 
-    {{-- ============================================= --}}
-    {{-- PERUBAHAN: Menambahkan kelas 'auto-dismiss' --}}
-    {{-- ============================================= --}}
     @if (session('success'))
         <div class="auto-dismiss bg-green-200 text-green-800 p-3 rounded mb-4">
             {{ session('success') }}
@@ -121,9 +118,6 @@
 @endsection
 
 @push('scripts')
-{{-- ============================================= --}}
-{{-- PENAMBAHAN: Script untuk Modal & Notifikasi  --}}
-{{-- ============================================= --}}
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         // --- Logika untuk Modal Hapus ---

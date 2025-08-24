@@ -6,28 +6,18 @@
 <div class="container mx-auto p-4">
     <div class="flex items-center justify-between mb-6">
         <h1 class="text-2xl font-semibold">Arsip Agenda</h1>
-        {{-- ============================================= --}}
-        {{-- PERUBAHAN: Tombol dibatasi untuk admin & operator --}}
-        {{-- ============================================= --}}
         @if(in_array(auth()->user()->role, ['admin', 'operator']))
-            <form action="{{ route('agendas.arsip') }}" method="POST" onsubmit="return confirm('Pindahkan semua agenda yang tanggalnya sudah lewat ke arsip?')">
-                @csrf
-                <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-sm inline-block">
-                    <i class="fas fa-archive mr-2"></i>Arsipkan Agenda Terlewat
-                </button>
-            </form>
+            <button type="button" id="open-archive-modal" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-sm inline-block">
+                <i class="fas fa-archive mr-2"></i>Arsipkan Agenda Terlewat
+            </button>
         @endif
     </div>
 
     @if (session('success'))
-        <div class="auto-dismiss bg-green-200 text-green-800 p-3 rounded mb-4">
-            {{ session('success') }}
-        </div>
+        <div class="auto-dismiss bg-green-200 text-green-800 p-3 rounded mb-4">{{ session('success') }}</div>
     @endif
     @if (session('error'))
-        <div class="auto-dismiss bg-red-200 text-red-800 p-3 rounded mb-4">
-            {{ session('error') }}
-        </div>
+        <div class="auto-dismiss bg-red-200 text-red-800 p-3 rounded mb-4">{{ session('error') }}</div>
     @endif
 
     <form method="GET" class="mb-4 p-4 bg-gray-50 rounded-lg border">
@@ -75,9 +65,9 @@
                         <td class="py-2 px-4 border-b text-left">{{ $agenda->asal_surat }}</td>
                         <td class="py-2 px-4 border-b">
                              @if($agenda->tanggal_mulai->eq($agenda->tanggal_selesai))
-                                {{ $agenda->tanggal_mulai->isoFormat('D MMM Y') }}
+                                {{ $agenda->tanggal_mulai->isoFormat('D MMMM Y') }}
                             @else
-                                {{ $agenda->tanggal_mulai->isoFormat('D MMM') }} - {{ $agenda->tanggal_selesai->isoFormat('D MMM Y') }}
+                                {{ $agenda->tanggal_mulai->isoFormat('D MMMM Y') }} - {{ $agenda->tanggal_selesai->isoFormat('D MMMM Y') }}
                             @endif
                         </td>
                         <td class="py-2 px-4 border-b text-left">{{ $agenda->tempat }}</td>
@@ -110,11 +100,12 @@
                         </td>
                         <td class="py-2 px-4 border-b">
                             <div class="flex flex-col items-center space-y-1">
-                                <a href="{{ route('agendas.show', $agenda->id) }}" class="w-24 bg-blue-500 hover:bg-blue-700 text-white py-1 px-2 rounded text-xs text-center">Detail</a>
+                                <a href="{{ route('agendas.show', ['agenda' => $agenda->id, 'from' => 'arsip']) }}" class="w-24 bg-blue-500 hover:bg-blue-700 text-white py-1 px-2 rounded text-xs text-center">Detail</a>
                                 
                                 @if(in_array(auth()->user()->role, ['admin', 'operator']))
+                                    <a href="{{ route('agendas.edit', ['agenda' => $agenda->id, 'from' => 'arsip']) }}" class="w-24 bg-yellow-500 hover:bg-yellow-700 text-white py-1 px-2 rounded text-xs text-center">Edit</a>
                                     <button type="button"
-                                            data-action="{{ route('agendas.destroy', $agenda->id) }}"
+                                            data-action="{{ route('agendas.destroy', ['agenda' => $agenda->id, 'from' => 'arsip']) }}"
                                             class="open-delete w-24 bg-red-500 hover:bg-red-700 text-white py-1 px-2 rounded text-xs text-center">
                                         Hapus Permanen
                                     </button>
@@ -135,6 +126,19 @@
     <div class="mt-4 flex justify-center">
         {{ $agendaArsip->links('pagination::tailwind') }}
     </div>
+</div>
+
+{{-- Modal Konfirmasi Arsip --}}
+<div id="confirm-archive" class="hidden fixed z-50 top-20 left-1/2 transform -translate-x-1/2 bg-white border border-gray-300 shadow-lg rounded-lg p-6 w-full max-w-md">
+    <h2 class="text-lg font-semibold text-gray-800 mb-2">Konfirmasi Arsip</h2>
+    <p class="text-sm text-gray-600 mb-4">Apakah Anda yakin ingin memindahkan semua agenda yang sudah terlewat ke dalam arsip?</p>
+    <form method="POST" action="{{ route('agendas.arsip.store') }}" id="archive-form">
+        @csrf
+        <div class="flex justify-end gap-2">
+            <button type="button" class="cancel-archive px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">Batal</button>
+            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Ya, Arsipkan</button>
+        </div>
+    </form>
 </div>
 
 {{-- Modal Konfirmasi Hapus --}}
@@ -164,22 +168,41 @@
         flatpickr("#search_tanggal_akhir", { dateFormat: "d-m-Y" });
 
         // --- Logika untuk Modal Hapus ---
-        const modal = document.getElementById('confirm-delete');
-        if (modal) {
-            const form = document.getElementById('delete-form');
-            const openButtons = document.querySelectorAll('.open-delete');
-            const cancelButtons = modal.querySelectorAll('.cancel-delete');
+        const deleteModal = document.getElementById('confirm-delete');
+        if (deleteModal) {
+            const deleteForm = document.getElementById('delete-form');
+            const openDeleteButtons = document.querySelectorAll('.open-delete');
+            const cancelDeleteButtons = deleteModal.querySelectorAll('.cancel-delete');
 
-            openButtons.forEach(button => {
+            openDeleteButtons.forEach(button => {
                 button.addEventListener('click', () => {
-                    form.setAttribute('action', button.getAttribute('data-action'));
-                    modal.classList.remove('hidden');
+                    deleteForm.setAttribute('action', button.getAttribute('data-action'));
+                    deleteModal.classList.remove('hidden');
                 });
             });
 
-            cancelButtons.forEach(button => {
+            cancelDeleteButtons.forEach(button => {
                 button.addEventListener('click', () => {
-                    modal.classList.add('hidden');
+                    deleteModal.classList.add('hidden');
+                });
+            });
+        }
+
+        // --- Logika untuk Modal Arsip ---
+        const archiveModal = document.getElementById('confirm-archive');
+        if (archiveModal) {
+            const openArchiveBtn = document.getElementById('open-archive-modal');
+            const cancelArchiveBtns = archiveModal.querySelectorAll('.cancel-archive');
+
+            if(openArchiveBtn) {
+                openArchiveBtn.addEventListener('click', () => {
+                    archiveModal.classList.remove('hidden');
+                });
+            }
+
+            cancelArchiveBtns.forEach(button => {
+                button.addEventListener('click', () => {
+                    archiveModal.classList.add('hidden');
                 });
             });
         }
@@ -190,12 +213,10 @@
             setTimeout(function() {
                 alert.style.transition = 'opacity 0.5s ease';
                 alert.style.opacity = '0';
-                
                 setTimeout(function() {
                     alert.remove();
                 }, 500);
-
-            }, 5000); // 5 detik
+            }, 5000);
         });
     });
 </script>

@@ -51,7 +51,7 @@ Route::middleware(['auth', 'role:admin,operator'])->group(function () {
     Route::post('/agendas/arsip', [AgendaController::class, 'arsipAgendaTerlewat'])->name('agendas.arsipAgendaTerlewat');
     
     // Tambahkan route ini di file routes/web.php
-    Route::delete('/agendas/{agenda}/delete-file/{index}', [AgendaController::class, 'deleteSurat'])->name('agendas.delete-file');
+    Route::delete('/agendas/{agenda}/delete-file', [AgendaController::class, 'deleteSurat'])->name('agendas.deleteSurat');
 
     // API untuk mengambil pegawai berdasarkan substansi (dipakai AJAX)
     Route::get('/agendas/getPegawaiBySubstansi/{substansiId}', [AgendaController::class, 'getPegawaiBySubstansi']);
@@ -79,6 +79,7 @@ Route::middleware(['auth', 'role:admin,operator'])->group(function () {
 Route::middleware(['auth', 'role:admin,operator,anggota'])->group(function () {
     Route::resource('agendas', AgendaController::class)->whereNumber('agenda');
     Route::get('/agendas/arsip', [AgendaController::class, 'arsip'])->name('agendas.arsip');
+    Route::post('/agendas/arsip', [AgendaController::class, 'arsipAgendaTerlewat'])->name('agendas.arsip.store');
     Route::get('/agendas/{agenda}/surat-tugas', [AgendaController::class, 'SuratTugas'])->name('agendas.surat_tugas');
     Route::get('/kalender', [KalenderController::class, 'index'])->name('kalender.index');
 });

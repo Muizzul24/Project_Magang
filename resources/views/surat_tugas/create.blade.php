@@ -151,10 +151,6 @@
 <!-- Flatpickr -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-
-{{-- ============================================= --}}
-{{-- PERBAIKAN: Menggabungkan semua skrip ke satu blok --}}
-{{-- ============================================= --}}
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         // Inisialisasi Flatpickr untuk input tanggal surat

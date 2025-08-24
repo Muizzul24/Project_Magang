@@ -95,10 +95,6 @@
                                 <div class="flex justify-center space-x-2">
                                     <a href="{{ route('users.edit', $user) }}"
                                        class="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-1 px-3 rounded text-sm">Edit</a>
-                                    
-                                    {{-- ============================================= --}}
-                                    {{-- PERUBAHAN: Tombol Hapus untuk membuka modal --}}
-                                    {{-- ============================================= --}}
                                     <button type="button"
                                             data-action="{{ route('users.destroy', $user) }}"
                                             class="open-delete bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-3 rounded text-sm">
@@ -122,9 +118,6 @@
 
 </div>
 
-{{-- ============================================= --}}
-{{-- PENAMBAHAN: Modal Konfirmasi Hapus          --}}
-{{-- ============================================= --}}
 <div id="confirm-delete" class="hidden fixed z-50 top-20 left-1/2 transform -translate-x-1/2 bg-white border border-gray-300 shadow-lg rounded-lg p-6 w-full max-w-md">
     <h2 class="text-lg font-semibold text-gray-800 mb-2">Konfirmasi Hapus</h2>
     <p class="text-sm text-gray-600 mb-4">Apakah Anda yakin ingin menghapus pengguna ini?</p>
@@ -140,9 +133,6 @@
 @endsection
 
 @push('scripts')
-{{-- ============================================= --}}
-{{-- PENAMBAHAN: Script untuk Modal & Notifikasi  --}}
-{{-- ============================================= --}}
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         // --- Logika untuk Modal Hapus ---

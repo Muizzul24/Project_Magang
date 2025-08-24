@@ -15,10 +15,7 @@ class DashboardController extends Controller
 
         $startDate = Carbon::today(); // Mulai hari ini
         $endDate = Carbon::today()->addDays($days); // Sampai hari ke-N
-
-        // =============================================
-        // PERUBAHAN: Logika Query untuk Rentang Tanggal
-        // =============================================
+        
         $recentAgendas = Agenda::with(['substansi', 'pegawais'])
             // Cari agenda yang rentang waktunya bersinggungan dengan periode dashboard.
             // Kondisi: Tanggal mulai agenda harus sebelum atau sama dengan tanggal akhir periode,

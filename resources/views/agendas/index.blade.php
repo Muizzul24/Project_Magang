@@ -26,10 +26,6 @@
             <div class="flex-grow flex flex-wrap gap-2 items-center">
                 <input type="text" name="search_kegiatan" placeholder="Cari Kegiatan" value="{{ request('search_kegiatan') }}" class="border border-gray-300 rounded px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <input type="text" name="search_asal_surat" placeholder="Cari Asal Surat" value="{{ request('search_asal_surat') }}" class="border border-gray-300 rounded px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                
-                {{-- ============================================= --}}
-                {{-- PERUBAHAN: Input Tanggal menggunakan Flatpickr --}}
-                {{-- ============================================= --}}
                 <input type="text" id="search_tanggal_mulai" name="search_tanggal_mulai" value="{{ request('search_tanggal_mulai') }}" class="border border-gray-300 rounded px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Cari Tanggal Awal">
                 <input type="text" id="search_tanggal_akhir" name="search_tanggal_akhir" value="{{ request('search_tanggal_akhir') }}" class="border border-gray-300 rounded px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Cari Tanggal Akhir">
                 
@@ -98,9 +94,9 @@
                     <td class="py-2 px-4 border-b text-sm">{{ $agenda->asal_surat }}</td>
                     <td class="py-2 px-4 border-b text-center text-sm">
                         @if($agenda->tanggal_mulai->eq($agenda->tanggal_selesai))
-                            {{ $agenda->tanggal_mulai->format('d M Y') }}
+                            {{ $agenda->tanggal_mulai->isoFormat('D MMMM Y') }}
                         @else
-                            {{ $agenda->tanggal_mulai->format('d M Y') }} - {{ $agenda->tanggal_selesai->format('d M Y') }}
+                            {{ $agenda->tanggal_mulai->isoFormat('D MMMM Y') }} - {{ $agenda->tanggal_selesai->isoFormat('D MMMM Y') }}
                         @endif
                     </td>
                     <td class="py-2 px-4 border-b text-sm">{{ $agenda->tempat }}</td>
@@ -134,18 +130,15 @@
                     </td>
                     <td class="py-2 px-4 border-b">
                         <div class="flex flex-col items-center space-y-1">
-                            <a href="{{ route('agendas.show', $agenda->id) }}" class="w-20 bg-blue-500 hover:bg-blue-700 text-white py-1 px-2 rounded text-xs text-center">Detail</a>
+                            <a href="{{ route('agendas.show', ['agenda' => $agenda->id, 'from' => 'index']) }}" class="w-20 bg-blue-500 hover:bg-blue-700 text-white py-1 px-2 rounded text-xs text-center">Detail</a>
+                            
                             @if(in_array(auth()->user()->role, ['admin', 'operator']))
                                 <a href="{{ route('agendas.edit', $agenda->id) }}" class="w-20 bg-yellow-500 hover:bg-yellow-700 text-white py-1 px-2 rounded text-xs text-center">Edit</a>
-                                <form action="{{ route('agendas.destroy', $agenda->id) }}" method="POST" onsubmit="return confirm('Anda yakin ingin menghapus agenda ini?')">
-                                    @csrf
-                                    @method('DELETE')
-                                     <button type="button"
-                                            data-action="{{ route('agendas.destroy', $agenda->id) }}"
-                                            class="w-20 bg-red-500 hover:bg-red-700 text-white py-1 px-2 rounded text-sm text-center open-delete">
-                                        Hapus
-                                    </button>
-                                </form>
+                                <button type="button"
+                                        data-action="{{ route('agendas.destroy', $agenda->id) }}"
+                                        class="w-20 bg-red-500 hover:bg-red-700 text-white py-1 px-2 rounded text-sm text-center open-delete">
+                                    Hapus
+                                </button>
                             @endif
                         </div>
                     </td>

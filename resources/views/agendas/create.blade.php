@@ -33,9 +33,6 @@
                    class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500" required>
         </div>
 
-        {{-- ============================================= --}}
-        {{-- PERUBAHAN: Input Rentang Tanggal              --}}
-        {{-- ============================================= --}}
         <div class="flex flex-wrap -mx-3 mb-4">
             <div class="w-full md:w-1/2 px-3 mb-6 md:mb-0">
                 <label for="tanggal_mulai" class="block text-sm font-bold text-gray-700 mb-2">Tanggal Mulai:</label>
@@ -142,9 +139,6 @@
             width: '100%'
         });
 
-        {{-- ============================================= --}}
-        {{-- PERUBAHAN: Inisialisasi Flatpickr            --}}
-        {{-- ============================================= --}}
         flatpickr("#tanggal_mulai", {
             dateFormat: "d-m-Y",
             defaultDate: "{{ old('tanggal_mulai') }}"

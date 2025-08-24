@@ -262,9 +262,6 @@ class AgendaController extends Controller
             $agenda->save();
         }
 
-        // =============================================
-        // PERBAIKAN: Tambahkan logika duplikasi file surat tugas
-        // =============================================
         if ($request->filled('surat_tugas_id')) {
             // Hapus file lama jika ada
             if ($agenda->surat_tugas && \Illuminate\Support\Facades\Storage::disk('public')->exists($agenda->surat_tugas)) {
@@ -297,7 +294,11 @@ class AgendaController extends Controller
 
         $agenda->pegawais()->sync($request->pegawai_ids ?? []);
 
-        return redirect()->route('agendas.index')->with('success', 'Agenda berhasil diperbarui!');
+        $redirectRoute = $request->input('from') === 'arsip' 
+            ? 'agendas.arsip' 
+            : 'agendas.index';
+
+        return redirect()->route($redirectRoute)->with('success', 'Agenda berhasil diperbarui!');
     }
     
     public function arsip(Request $request)
@@ -313,9 +314,6 @@ class AgendaController extends Controller
             $q->where('substansi_id', $user->substansi_id);
         });
 
-        // =============================================
-        // PENAMBAHAN: Logika untuk memproses pencarian
-        // =============================================
         if ($request->filled('search_kegiatan')) {
             // Gunakan ILIKE untuk pencarian case-insensitive di PostgreSQL
             $query->where('kegiatan', 'ILIKE', '%' . $request->input('search_kegiatan') . '%');
@@ -367,40 +365,52 @@ class AgendaController extends Controller
         );
     }
 
-    public function deleteSurat(Agenda $agenda, $index)
+    public function deleteSurat(Request $request, Agenda $agenda)
     {
+        // Validasi bahwa nama file dikirim
+        $validated = $request->validate(['filename' => 'required|string']);
+        $fileToDelete = $validated['filename'];
+
         try {
             if (auth()->user()->role === 'operator' && auth()->user()->substansi_id != $agenda->substansi_id) {
-                return response()->json(['success' => false, 'error' => 'Tidak diizinkan menghapus file ini.'], 403);
+                return response()->json(['success' => false, 'error' => 'Tidak diizinkan.'], 403);
             }
+
             if (!$agenda->surat) {
-                return response()->json(['success' => false, 'error' => 'Tidak ada file surat yang ditemukan.'], 404);
+                return response()->json(['success' => false, 'error' => 'Tidak ada file surat.'], 404);
             }
+
             $files = explode(',', $agenda->surat);
-            if (!isset($files[$index])) {
-                return response()->json(['success' => false, 'error' => 'File tidak ditemukan pada index tersebut.'], 404);
+
+            // Cari nama file di dalam array
+            $key = array_search($fileToDelete, $files);
+
+            // Jika file tidak ditemukan di dalam daftar
+            if ($key === false) {
+                return response()->json(['success' => false, 'error' => 'File yang akan dihapus tidak ditemukan dalam daftar.'], 404);
             }
-            $fileToDelete = $files[$index];
-            $fileDeleted = false;
+
+            // Hapus file dari storage
             if (Storage::disk('public')->exists($fileToDelete)) {
-                $fileDeleted = Storage::disk('public')->delete($fileToDelete);
+                Storage::disk('public')->delete($fileToDelete);
             }
-            unset($files[$index]);
-            $files = array_values($files);
-            $agenda->surat = empty($files) ? null : implode(',', $files);
-            $dbUpdated = $agenda->save();
-            if ($dbUpdated) {
-                return response()->json(['success' => true, 'message' => 'File berhasil dihapus.']);
-            } else {
-                return response()->json(['success' => false, 'error' => 'Gagal mengupdate database.'], 500);
-            }
+
+            // Hapus file dari array
+            unset($files[$key]);
+
+            // Simpan kembali daftar file yang sudah diperbarui
+            $agenda->surat = empty($files) ? null : implode(',', array_values($files));
+            $agenda->save();
+
+            return response()->json(['success' => true, 'message' => 'File berhasil dihapus.']);
+
         } catch (\Exception $e) {
             \Log::error("Error deleting file: " . $e->getMessage());
-            return response()->json(['success' => false, 'error' => 'Terjadi kesalahan sistem: ' . $e->getMessage()], 500);
+            return response()->json(['success' => false, 'error' => 'Terjadi kesalahan sistem.'], 500);
         }
     }
 
-    public function destroy(Agenda $agenda)
+    public function destroy(Request $request, Agenda $agenda) // Tambahkan Request
     {
         $agenda->pegawais()->detach();
         if ($agenda->surat) {
@@ -415,6 +425,11 @@ class AgendaController extends Controller
             Storage::disk('public')->delete($agenda->surat_tugas);
         }
         $agenda->delete();
-        return redirect()->route('agendas.index')->with('success', 'Agenda berhasil dihapus.');
+
+        $redirectRoute = $request->input('from') === 'arsip' 
+            ? 'agendas.arsip' 
+            : 'agendas.index';
+
+        return redirect()->route($redirectRoute)->with('success', 'Agenda berhasil dihapus.');
     }
 }

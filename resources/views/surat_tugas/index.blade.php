@@ -35,17 +35,15 @@
 
         <select name="sort_by" onchange="this.form.submit()" class="border border-gray-300 rounded px-3 py-1">
             <option value="">Urutkan Berdasarkan</option>
+            <option value="terbaru" {{ request('sort_by') == 'terbaru' ? 'selected' : '' }}>Data Terbaru</option>
             <option value="tanggal_terdekat" {{ request('sort_by') == 'tanggal_terdekat' ? 'selected' : '' }}>Tanggal Terdekat</option>
             <option value="tanggal_terjauh" {{ request('sort_by') == 'tanggal_terjauh' ? 'selected' : '' }}>Tanggal Terjauh</option>
             <option value="substansi" {{ request('sort_by') == 'substansi' ? 'selected' : '' }}>Substansi</option>
-            <option value="terbaru" {{ request('sort_by') == 'terbaru' ? 'selected' : '' }}>Data Terbaru</option>
         </select>
+
     </div>
 </form>
 
-{{-- ============================================= --}}
-{{-- PERUBAHAN: Menambahkan kelas 'auto-dismiss' --}}
-{{-- ============================================= --}}
 @if (session('success'))
     <div class="auto-dismiss bg-green-200 text-green-800 p-3 rounded mb-4">
         {{ session('success') }}
@@ -80,7 +78,7 @@
                 <tr class="hover:bg-gray-50 border-b text-center">
                     <td class="py-2 px-4">{{ ($suratTugas->currentPage() - 1) * $suratTugas->perPage() + $loop->iteration }}</td>
                     <td class="py-2 px-4">{{ $surat->nomor_surat }}</td>
-                    <td class="py-2 px-4">{{ \Carbon\Carbon::parse($surat->tanggal_surat)->format('d-m-Y') }}</td>
+                    <td class="py-2 px-4">{{ $surat->tanggal_surat->isoFormat('D MMMM Y') }}</td>
                     <td class="py-2 px-4 text-left">{{ $surat->tujuan }}</td>
                     <td class="py-2 px-4">{{ $surat->substansi->nama ?? '-' }}</td>
                     <td class="py-2 px-4">

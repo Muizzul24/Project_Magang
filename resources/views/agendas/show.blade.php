@@ -8,18 +8,16 @@
     {{-- Header Halaman dengan Tombol Aksi --}}
     <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6">
         <div>
-            <h1 class="text-2xl lg:text-2xl font-bold text-gray-800">{{ $agenda->kegiatan }}</h1>
+            <h1 class="text-2xl lg:text-3xl font-bold text-gray-800">{{ $agenda->kegiatan }}</h1>
             <p class="text-sm text-gray-500 mt-1">Detail agenda kegiatan</p>
         </div>
         <div class="flex items-center space-x-2 mt-4 sm:mt-0">
-            <a href="{{ route('agendas.index') }}" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold px-4 py-2 rounded text-sm transition duration-200">
+            @php
+                $backUrl = request('from') === 'arsip' ? route('agendas.arsip') : route('agendas.index');
+            @endphp
+            <a href="{{ $backUrl }}" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold px-4 py-2 rounded text-sm transition duration-200">
                 <i class="fas fa-arrow-left mr-2"></i>Kembali
             </a>
-            @if(in_array(auth()->user()->role, ['admin', 'operator']))
-                <a href="{{ route('agendas.edit', $agenda->id) }}" class="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold px-4 py-2 rounded text-sm transition duration-200">
-                    <i class="fas fa-edit mr-2"></i>Edit
-                </a>
-            @endif
         </div>
     </div>
 

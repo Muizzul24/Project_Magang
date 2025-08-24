@@ -24,7 +24,7 @@
         <div>
             <label for="nomor_surat" class="block font-medium mb-1">Nomor Surat</label>
             <input type="text" name="nomor_surat" id="nomor_surat" value="{{ old('nomor_surat', $suratTugas->nomor_surat) }}"
-                class="w-full border border-gray-300 rounded px-3 py-2" required>
+                   class="w-full border border-gray-300 rounded px-3 py-2" required>
         </div>
 
         {{-- Dasar Surat --}}
@@ -64,15 +64,14 @@
         <div>
             <label for="tujuan" class="block font-medium mb-1">Tujuan</label>
             <input type="text" name="tujuan" id="tujuan" value="{{ old('tujuan', $suratTugas->tujuan) }}"
-                class="w-full border border-gray-300 rounded px-3 py-2" required>
+                   class="w-full border border-gray-300 rounded px-3 py-2" required>
         </div>
-
-        {{-- Tanggal Surat --}}
+        
         <div>
             <label for="tanggal_surat" class="block font-medium mb-1">Tanggal Surat</label>
-            <input type="date" name="tanggal_surat" id="tanggal_surat"
-                value="{{ old('tanggal_surat', $suratTugas->tanggal_surat->format('Y-m-d')) }}"
-                class="w-full border border-gray-300 rounded px-3 py-2" required>
+            <input type="text" name="tanggal_surat" id="tanggal_surat"
+                   value="{{ old('tanggal_surat', $suratTugas->tanggal_surat->format('d-m-Y')) }}"
+                   class="w-full border border-gray-300 rounded px-3 py-2" required placeholder="DD-MM-YYYY">
         </div>
 
         {{-- Paraf Surat --}}
@@ -92,7 +91,7 @@
             <label for="substansi_penandatangan_id" class="block font-medium mb-1">Substansi Penandatangan</label>
             <select name="substansi_penandatangan_id" id="substansi_penandatangan_id" class="select2 w-full border px-3 py-2 rounded" required>
                 <option value="" disabled selected>Pilih Substansi</option>
-                @foreach ($substansis as $substansi)
+                @foreach ($substansiPenandatangan as $substansi)
                     <option value="{{ $substansi->id }}" {{ old('substansi_penandatangan_id', $suratTugas->substansi_penandatangan_id) == $substansi->id ? 'selected' : '' }}>
                         {{ $substansi->nama }}
                     </option>
@@ -122,15 +121,22 @@
 @endsection
 
 @push('scripts')
+<!-- Flatpickr -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
 <script>
 $(document).ready(function () {
-    const dasarSuratData = @json($dasarSurats->keyBy('id'));
+    flatpickr("#tanggal_surat", {
+        dateFormat: "d-m-Y",
+    });
+
     const oldSubstansiId = '{{ old('substansi_id', $suratTugas->substansi_id) }}';
     const oldPegawaiIds = @json(old('pegawai_ids', $suratTugas->pegawais->pluck('id')));
     const oldPenandatanganId = '{{ old('penandatangan_id', $suratTugas->penandatangan_id) }}';
     const oldSubstansiPenandatanganId = '{{ old('substansi_penandatangan_id', $suratTugas->substansi_penandatangan_id) }}';
 
-    $('#pegawai_ids, #penandatangan_id, #dasar_surat_id, #paraf_surat_id, #substansi_penandatangan_id').select2({ width: '100%', allowClear: true });
+    $('#pegawai_ids, #penandatangan_id, #dasar_surat_id, #paraf_surat_id, #substansi_penandatangan_id, #substansi_id').select2({ width: '100%', allowClear: true });
 
     function loadPegawai(substansiId, selectedPegawaiIds = []) {
         if (substansiId) {
@@ -142,7 +148,7 @@ $(document).ready(function () {
                     $('#pegawai_ids').empty();
                     $.each(data, function (_, pegawai) {
                         const isSelected = selectedPegawaiIds.includes(pegawai.id);
-                        const option = new Option(`${pegawai.nama} - ${pegawai.nip} - ${pegawai.jabatan}`, pegawai.id, isSelected, isSelected);
+                        const option = new Option(`${pegawai.nama} - ${pegawai.nip}`, pegawai.id, isSelected, isSelected);
                         $('#pegawai_ids').append(option);
                     });
                     $('#pegawai_ids').trigger('change');
@@ -166,12 +172,12 @@ $(document).ready(function () {
                     $('#penandatangan_id').empty().append('<option disabled selected>Pilih Pegawai</option>');
                     $.each(data, function (_, pegawai) {
                         const selected = pegawai.id == selectedId ? 'selected' : '';
-                        $('#penandatangan_id').append(`<option value="${pegawai.id}" ${selected}>${pegawai.nama} - ${pegawai.nip} - ${pegawai.jabatan}</option>`);
+                        $('#penandatangan_id').append(`<option value="${pegawai.id}" ${selected}>${pegawai.nama} - ${pegawai.nip}</option>`);
                     });
                     $('#penandatangan_id').trigger('change');
                 },
-                error: function (xhr) {
-                    alert('Gagal memuat pegawai penandatangan.\nStatus: ' + xhr.status + '\nResponse: ' + xhr.responseText);
+                error: function () {
+                    alert('Gagal memuat pegawai penandatangan.');
                 }
             });
         } else {
@@ -180,13 +186,11 @@ $(document).ready(function () {
     }
 
     $('#substansi_id').on('change', function () {
-        const substansiId = $(this).val();
-        loadPegawai(substansiId);
+        loadPegawai($(this).val());
     });
 
     $('#substansi_penandatangan_id').on('change', function () {
-        const substansiId = $(this).val();
-        loadPenandatanganBySubstansi(substansiId);
+        loadPenandatanganBySubstansi($(this).val());
     });
 
     // Initial load

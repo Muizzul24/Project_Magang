@@ -21,7 +21,7 @@ class SuratTugasController extends Controller
         $searchTujuan = $request->input('search_tujuan');
         $searchSubstansi = $request->input('search_substansi');
         $searchPegawai = $request->input('search_pegawai');
-        $sortBy = $request->input('sort_by', 'tanggal_terdekat');
+        $sortBy = $request->input('sort_by', 'terbaru');
 
         $query = SuratTugas::with(['pegawais', 'dasarSurat', 'parafSurat', 'penandatangan', 'substansi']);
 
@@ -32,9 +32,6 @@ class SuratTugasController extends Controller
         // Pencarian
         if ($searchTanggal) {
             try {
-                // =============================================
-                // PERBAIKAN: Konversi format tanggal sebelum query
-                // =============================================
                 $tanggalFormatted = Carbon::createFromFormat('d-m-Y', $searchTanggal)->format('Y-m-d');
                 $query->whereDate('tanggal_surat', $tanggalFormatted);
             } catch (\Exception $e) {
@@ -75,7 +72,7 @@ class SuratTugasController extends Controller
                 $query->orderBy('surat_tugas.created_at', 'desc');
                 break;
             default:
-                $query->orderBy('tanggal_surat', 'asc');
+                $query->orderBy('surat_tugas.created_at', 'desc');
                 break;
         }
 
@@ -165,17 +162,17 @@ class SuratTugasController extends Controller
     {
         $suratTugas = SuratTugas::with('pegawais', 'dasarSurat', 'parafSurat')->findOrFail($id);
 
-        // Batasi substansi berdasarkan role
         if (auth()->user()->role === 'operator') {
             $substansis = Substansi::where('id', auth()->user()->substansi_id)->get();
         } else {
             $substansis = Substansi::all();
         }
 
+        $substansiPenandatangan = Substansi::all();
         $dasarSurats = DasarSurat::all();
         $parafSurats = ParafSurat::all();
 
-        return view('surat_tugas.edit', compact('suratTugas', 'substansis', 'dasarSurats', 'parafSurats'));
+        return view('surat_tugas.edit', compact('suratTugas', 'substansis', 'dasarSurats', 'parafSurats', 'substansiPenandatangan'));
     }
 
     public function update(Request $request, $id)
@@ -184,7 +181,7 @@ class SuratTugasController extends Controller
 
         $validated = $request->validate([
             'nomor_surat' => 'required|string|max:255',
-            'tanggal_surat' => 'required|date',
+            'tanggal_surat' => 'required|date_format:d-m-Y',
             'tujuan' => 'required|string|max:255',
             'substansi_id' => 'required|exists:substansis,id',
             'pegawai_ids' => 'required|array|min:1',
@@ -193,16 +190,14 @@ class SuratTugasController extends Controller
             'dasar_surat_id.*' => 'exists:dasar_untuk_surat,id',
             'paraf_surat_id' => 'required|array|min:1',
             'paraf_surat_id.*' => 'exists:paraf_untuk_surat,id',
+            'substansi_penandatangan_id' => 'required|exists:substansis,id',
+            'penandatangan_id' => 'required|exists:pegawais,id',
         ]);
+        
+        $validated['tanggal_surat'] = Carbon::createFromFormat('d-m-Y', $validated['tanggal_surat'])->format('Y-m-d');
 
         DB::transaction(function () use ($suratTugas, $validated) {
-            $suratTugas->update([
-                'nomor_surat' => $validated['nomor_surat'],
-                'tanggal_surat' => $validated['tanggal_surat'],
-                'tujuan' => $validated['tujuan'],
-                'substansi_id' => $validated['substansi_id'],
-            ]);
-
+            $suratTugas->update($validated);
             $suratTugas->pegawais()->sync($validated['pegawai_ids']);
             $suratTugas->dasarSurat()->sync($validated['dasar_surat_id']);
             $suratTugas->parafSurat()->sync($validated['paraf_surat_id']);
@@ -316,10 +311,6 @@ class SuratTugasController extends Controller
     public function destroy($id)
     {
         $suratTugas = SuratTugas::findOrFail($id);
-
-        // =============================================
-        // PERBAIKAN: Cek relasi ke Agenda sebelum hapus
-        // =============================================
         if ($suratTugas->agendas()->exists()) {
             return redirect()->route('surat_tugas.index')
                 ->with('error', 'Gagal! Surat tugas ini tidak bisa dihapus karena masih digunakan oleh sebuah agenda.');

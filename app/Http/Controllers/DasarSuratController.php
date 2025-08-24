@@ -80,10 +80,6 @@ class DasarSuratController extends Controller
     // Menghapus data dasar surat
     public function destroy(DasarSurat $dasarSurat)
     {
-        // =============================================
-        // PERBAIKAN: Tambahkan logika pengecekan relasi
-        // =============================================
-
         // 1. Cek apakah dasar surat ini masih digunakan di surat tugas
         if ($dasarSurat->suratTugas()->exists()) {
             return redirect()->route('dasarSurat.index')
